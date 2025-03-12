@@ -111,38 +111,53 @@ void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket
 
 
 // Encryption algorithm
+#include <stdio.h>
+#include <string.h>
+
 void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
+    int length = strlen(plaintext);
 
-  int length = strlen(plaintext);
-  if (plaintext[length - 1] == '\n') {
-    length--; 
-  }
+    // Ignore newline at the end if present
+    if (length > 0 && plaintext[length - 1] == '\n') {
+        length--;
+    }
 
-  for (int i = 0; i < length; i++) {
-      int plainVal, keyVal, cipherVal;
+    for (int i = 0; i < length; i++) {
+        int plainVal, keyVal, cipherVal;
 
-      if (plaintext[i] == ' ') {
-          plainVal = 26;  
-      } else {
-          plainVal = plaintext[i] - 'A';  
-      }
+        // Convert plaintext character to numeric value
+        if (plaintext[i] == ' ') {
+            plainVal = 26;  // Space is mapped to 26
+        } else {
+            plainVal = plaintext[i] - 'A';  // Convert 'A'-'Z' to 0-25
+        }
 
-      if (key[i] == ' ') {
-          keyVal = 26;  
-      } else {
-          keyVal = key[i] - 'A';  
-      }
+        // Convert key character to numeric value
+        if (key[i] == ' ') {
+            keyVal = 26;  // Space is mapped to 26
+        } else {
+            keyVal = key[i] - 'A';  // Convert 'A'-'Z' to 0-25
+        }
 
-      cipherVal = (plainVal + keyVal) % 27;  
+        // Apply the One-Time Pad encryption formula: (plainVal + keyVal) % 27
+        cipherVal = (plainVal + keyVal) % 27;
 
-      if (cipherVal == 26) {
-          ciphertext[i] = ' ';  
-      } else {
-          ciphertext[i] = 'A' + cipherVal;  
-      }
-  }
-  ciphertext[length] = '\n'; 
-  ciphertext[length + 1] = '\0'; 
+        // Convert numeric value back to character
+        if (cipherVal == 26) {
+            ciphertext[i] = ' ';  // Map 26 back to a space
+        } else {
+            ciphertext[i] = 'A' + cipherVal;  // Convert 0-25 to 'A'-'Z'
+        }
+
+        // ** Debugging Output **
+        printf("Encrypting: plaintext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> ciphertext[%d] = '%c' (%d)\n",
+               i, plaintext[i], plainVal, 
+               i, key[i], keyVal, 
+               i, ciphertext[i], cipherVal);
+    }
+
+    // Ensure proper null termination
+    ciphertext[length] = '\0'; 
 }
 
 

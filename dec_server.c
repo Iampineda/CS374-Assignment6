@@ -121,28 +121,38 @@ void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
   for (int i = 0; i < length; i++) {
       int cipherVal, keyVal, plainVal;
 
+      // Convert ciphertext character to numerical value
       if (ciphertext[i] == ' ') {
           cipherVal = 26;  
       } else {
           cipherVal = ciphertext[i] - 'A';  
       }
 
+      // Convert key character to numerical value
       if (key[i] == ' ') {
           keyVal = 26;  
       } else {
           keyVal = key[i] - 'A';  
       }
 
+      // Perform decryption calculation
       plainVal = (cipherVal - keyVal + 27) % 27;  // Ensure non-negative result
 
+      // Convert numerical value back to plaintext character
       if (plainVal == 26) {
           plaintext[i] = ' ';  
       } else {
           plaintext[i] = 'A' + plainVal;  
       }
+
+      // Debug output for each character processed
+      printf("Decrypting: ciphertext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> plaintext[%d] = '%c' (%d)\n",
+             i, ciphertext[i], cipherVal, i, key[i], keyVal, i, plaintext[i], plainVal);
   }
-  plaintext[length] = '\0';  
+
+  plaintext[length] = '\0';  // Null-terminate the string
 }
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
