@@ -2,21 +2,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/types.h>  
-#include <sys/socket.h> 
-#include <netdb.h>      
-
-/**
-* Client code
-* 1. Create a socket and connect to the server specified in the command arugments.
-* 2. Prompt the user for input and send that input as a message to the server.
-* 3. Print the message received from the server and exit the program.
-*/
+#include <sys/types.h>  // ssize_t
+#include <sys/socket.h> // send(), recv()
+#include <netdb.h>      // gethostbyname()
 
 // Error function used for reporting issues
 void error(const char *msg) { 
   perror(msg); 
-  exit(0); 
+  exit(1); 
 } 
 
 // Set up the address struct
@@ -34,25 +27,28 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber, char* hostn
   struct hostent* hostInfo = gethostbyname(hostname); 
   if (hostInfo == NULL) { 
     fprintf(stderr, "CLIENT: ERROR, no such host\n"); 
-    exit(0); 
+    exit(1); 
   }
   // Copy the first IP address from the DNS entry to sin_addr.s_addr
-  memcpy((char*) &address->sin_addr.s_addr, 
-        hostInfo->h_addr_list[0],
-        hostInfo->h_length);
+  memcpy((char*) &address->sin_addr.s_addr, hostInfo->h_addr_list[0], hostInfo->h_length);
 }
 
 int main(int argc, char *argv[]) {
-
   int socketFD, charsWritten, charsRead;
   struct sockaddr_in serverAddress;
-  char buffer[1024];
+  char buffer[8192]; // Increased buffer size for large messages
 
   // Check usage & args
   if (argc < 5) { 
-    fprintf(stderr,"USAGE: %s hostname port plaintext key \n", argv[0]); 
-    exit(0); 
-  } 
+    fprintf(stderr,"USAGE: %s hostname port plaintext key\n", argv[0]); 
+    exit(1); 
+  }
+
+  // Check that the key is at least as long as the plaintext
+  if (strlen(argv[4]) < strlen(argv[3])) {
+    fprintf(stderr, "ERROR: Key is too short\n");
+    exit(1);
+  }
 
   // Create a socket
   socketFD = socket(AF_INET, SOCK_STREAM, 0); 
@@ -60,7 +56,7 @@ int main(int argc, char *argv[]) {
     error("CLIENT: ERROR opening socket");
   }
 
-   // Set up the server address struct
+  // Set up the server address struct
   setupAddressStruct(&serverAddress, atoi(argv[2]), argv[1]);
 
   // Connect to server
@@ -68,44 +64,59 @@ int main(int argc, char *argv[]) {
     error("CLIENT: ERROR connecting");
   }
 
+  // Handshake: Send client type
+  charsWritten = send(socketFD, "ENC_CLIENT", 10, 0);
+  if (charsWritten < 0) {
+    error("CLIENT: ERROR sending handshake");
+  }
 
-// ** Changes start from CLIENT TEMPLATE ** //
+  // Handshake: Receive confirmation from the server
+  char handshakeMsg[16];
+  memset(handshakeMsg, '\0', sizeof(handshakeMsg));
 
- 
-  // Clear out the buffer array
+  charsRead = recv(socketFD, handshakeMsg, sizeof(handshakeMsg) - 1, 0);
+  if (charsRead < 0) {
+    error("CLIENT: ERROR receiving handshake");
+  }
+  if (strncmp(handshakeMsg, "ENC_SERVER", 10) != 0) {
+    fprintf(stderr, "CLIENT: ERROR - connected to wrong server\n");
+    close(socketFD);
+    exit(2);
+  }
+
+  // Prepare the message to send
   memset(buffer, '\0', sizeof(buffer));
-  strcpy(buffer, argv[3]);              
-  strcat(buffer, " ");                    
-  strcat(buffer, argv[4]);                
-
-
-// ** Changes end from CLIENT TEMPLATE ** //
+  snprintf(buffer, sizeof(buffer), "%s %s", argv[3], argv[4]);
 
   // Send message to server
-  // Write to the server
-  charsWritten = send(socketFD, buffer, strlen(buffer), 0); 
-  if (charsWritten < 0){
-    error("CLIENT: ERROR writing to socket");
-  }
-  if (charsWritten < strlen(buffer)){
-    printf("CLIENT: WARNING: Not all data written to socket!\n");
+  int totalSent = 0, messageLen = strlen(buffer);
+  while (totalSent < messageLen) {
+    charsWritten = send(socketFD, buffer + totalSent, messageLen - totalSent, 0);
+    if (charsWritten < 0){
+      error("CLIENT: ERROR writing to socket");
+    }
+    if (charsWritten == 0) break;  
+    totalSent += charsWritten;
   }
 
   // Get return message from server
-  // Clear out the buffer again for reuse
   memset(buffer, '\0', sizeof(buffer));
 
-  // Read data from the socket, leaving \0 at end
-  charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
-  if (charsRead < 0){
-    error("CLIENT: ERROR reading from socket");
+  int totalReceived = 0;
+  while (totalReceived < sizeof(buffer) - 1) {
+    charsRead = recv(socketFD, buffer + totalReceived, sizeof(buffer) - 1 - totalReceived, 0);
+    if (charsRead < 0) {
+      error("CLIENT: ERROR reading from socket");
+    }
+    if (charsRead == 0) break; 
+    totalReceived += charsRead;
   }
 
-  printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+  buffer[totalReceived] = '\0';  
+  // Print the encrypted message 
+  printf("%s\n", buffer);
 
   // Close the socket
   close(socketFD); 
   return 0;
 }
-
-

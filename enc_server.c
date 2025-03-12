@@ -31,7 +31,13 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber){
 
 // Encryption algorithm
 void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
-    for (int i = 0; i < strlen(plaintext); i++) {
+
+    int length = strlen(plaintext);
+    if (plaintext[length - 1] == '\n') {
+      length--; 
+    }
+
+    for (int i = 0; i < length; i++) {
         int plainVal, keyVal, cipherVal;
 
         if (plaintext[i] == ' ') {
@@ -54,10 +60,9 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
             ciphertext[i] = 'A' + cipherVal;  
         }
     }
-    ciphertext[strlen(plaintext)] = '\0';  
+    ciphertext[length] = '\n'; 
+    ciphertext[length + 1] = '\0'; 
 }
-
-
 
 
 int main(int argc, char *argv[]){
@@ -79,8 +84,15 @@ int main(int argc, char *argv[]){
     error("ERROR opening socket");
   }
 
+
   // Set up the address struct for the server socket
   setupAddressStruct(&serverAddress, atoi(argv[1]));
+
+  int reuse = 1;
+  if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) < 0) {
+      error("ERROR: setsockopt failed");
+      exit(1);
+  }
 
   // Associate the socket to the port
   if (bind(listenSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0){
@@ -98,11 +110,11 @@ int main(int argc, char *argv[]){
     connectionSocket = accept(listenSocket, (struct sockaddr *) &clientAddress, &sizeOfClientInfo); 
     if (connectionSocket < 0){
       error("ERROR on accept");
+      continue; 
     }
 
     printf("SERVER: Connected to client running at host %d port %d\n", ntohs(clientAddress.sin_addr.s_addr), ntohs(clientAddress.sin_port));
 
-// ** Changes start from SERVER TEMPLATE ** //
 
     pid_t spawnPid = fork();
 
@@ -115,17 +127,63 @@ int main(int argc, char *argv[]){
       case 0: // Child Process
 
         close(listenSocket); 
-        
-        memset(buffer, '\0', sizeof(buffer));
-        int charsRead = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
-        if (charsRead < 0) {
-            error("ERROR reading from socket");
+
+        // Verify client is ENC_CLIENT
+        char whatClient[16];
+        memset(whatClient, '\0', sizeof(whatClient));
+        int checkClient = recv(connectionSocket, whatClient, sizeof(whatClient) - 1, 0);
+
+        if (checkClient < 0) { 
+            fprintf(stderr, "ERROR: Reading handshake\n");
+            close(connectionSocket);
+            exit(1);
+        }
+        if (strncmp(whatClient, "ENC_CLIENT", 10) != 0) {
+            fprintf(stderr, "ERROR: Not ENC_CLIENT\n");
+            close(connectionSocket);
+            exit(1);
         }
 
+        // Send handshake confirmation
+        int handshakeSent = send(connectionSocket, "ENC_SERVER", 10, 0);
+        if (handshakeSent < 0) {
+            fprintf(stderr, "ERROR: Sending handshake response failed\n");
+            close(connectionSocket);
+            exit(1);
+        }
+
+
+        // Loop to receive full message
+        memset(buffer, '\0', sizeof(buffer));
+        int totalReceived = 0;
+        int charsRead;
+
+        while (totalReceived < sizeof(buffer) - 1) {
+            
+            charsRead = recv(connectionSocket, buffer + totalReceived, sizeof(buffer) - 1 - totalReceived, 0);
+            
+            if (charsRead < 0) { 
+                fprintf(stderr, "ERROR: Reading from socket\n");
+                close(connectionSocket);
+                exit(1);
+            }
+            if (charsRead == 0) { 
+                break;
+            }
+            totalReceived += charsRead;
+        }
+
+        buffer[totalReceived] = '\0';
+        if (totalReceived <= 0) {
+            fprintf(stderr, "ERROR: Received Empty Message\n");
+            close(connectionSocket);
+            exit(1); 
+        }
+
+        // Extract plaintext and key
         char plaintext[1024] = {0};
         char key[1024] = {0};
         char ciphertext[1024] = {0};
-        
 
         char *saveptr;  
 
@@ -133,35 +191,47 @@ int main(int argc, char *argv[]){
         if (token != NULL) {
             strncpy(plaintext, token, sizeof(plaintext) - 1);
         }
-        
+
         token = strtok_r(NULL, " ", &saveptr);  // key
         if (token != NULL) {
             strncpy(key, token, sizeof(key) - 1);
         }
-        
+
         if (strlen(key) < strlen(plaintext)) {
-          printf("ERROR: Key is too short \n");
-          close(connectionSocket);
-          exit(1);
+            fprintf(stderr, "ERROR: Key is too short\n");
+            close(connectionSocket);
+            exit(1);
         }
 
+        // Encrypt message
         encryptMessage(plaintext, key, ciphertext);
-        send(connectionSocket, ciphertext, strlen(ciphertext), 0);
+
+        // Loop to send full message
+        int totalSent = 0;
+        int messageLength = strlen(ciphertext);
+
+        while (totalSent < messageLength) {
+            int sentAmount = send(connectionSocket, ciphertext + totalSent, messageLength - totalSent, 0);
+            if (sentAmount < 0) { 
+                fprintf(stderr, "ERROR: could not write to socket\n");
+                close(connectionSocket);
+                exit(1); 
+            }
+            if (sentAmount == 0) { 
+                break;
+            }
+            totalSent += sentAmount; 
+        }
 
         close(connectionSocket);
-        exit(0);
-        break; 
+        exit(0); 
+        break;
+
 
       default: // Parent Process
         close(connectionSocket); 
-        waitpid(-1, NULL, WNOHANG);
         break;
     }
-
-// ** Changes end from SERVER TEMPLATE ** //
-
-
-
 
   }
 
