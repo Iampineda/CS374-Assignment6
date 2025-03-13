@@ -27,10 +27,6 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
-
-
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 void sendMessage(int socketFD, char *message) {

@@ -27,10 +27,6 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
-
-
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 void sendMessage(int socketFD, char *message) {
@@ -54,105 +50,179 @@ void sendMessage(int socketFD, char *message) {
   printf("Sent full message: \"%s\"\n", message);
 }
 
+
+
+
+
+
+
+
+
+/////////////////////
 void receiveMessage(int socketFD, char *buffer, int bufferSize) {
   memset(buffer, '\0', bufferSize);
   int totalReceived = 0;
   int charsRead;
-  char tempBuffer[2];
 
   while (totalReceived < bufferSize - 1) {
-      charsRead = recv(socketFD, tempBuffer, 1, 0); // Read 1 byte at a time
+      charsRead = recv(socketFD, buffer + totalReceived, bufferSize - totalReceived - 1, 0);
+      
       if (charsRead < 0) {
           perror("ERROR reading from socket");
           close(socketFD);
           exit(1);
       }
-      if (charsRead == 0 || tempBuffer[0] == '\n') { // End if client closed or newline received
+      if (charsRead == 0) {  // Stop if connection closes
           break;
       }
-      buffer[totalReceived] = tempBuffer[0];
-      totalReceived++;
+
+      totalReceived += charsRead;
+
+      // ** Check if two newlines exist (plaintext + key) **
+      char *firstNewline = strchr(buffer, '\n');
+      if (firstNewline != NULL) {
+          char *secondNewline = strchr(firstNewline + 1, '\n');  // Look for second newline
+          if (secondNewline != NULL) {
+              break;  // We have received both lines
+          }
+      }
   }
 
-  buffer[totalReceived] = '\0'; // Null-terminate the received message
-  printf("Received full message: \"%s\"\n", buffer);
+  buffer[totalReceived] = '\0';  // Ensure null termination
+
+  // ** Debugging Output **
+  printf("SERVER: Received full message:\n---START---\n%s\n---END---\n", buffer);
+  fflush(stdout);
 }
 
 
-// Function to parse message received from the client
-void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
+
+
+// void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
+//   memset(plaintext, '\0', 1024);
+//   memset(key, '\0', 1024);
+
+//   // ** Debugging: Print raw message before parsing **
+//   printf("SERVER: Raw buffer before parsing:\n---START---\n%s\n---END---\n", buffer);
+//   fflush(stdout);
+
+//   // ** Step 1: Find the first newline **
+//   char *newlinePos = strchr(buffer, '\n');
+//   if (newlinePos != NULL) {
+//       // ** Step 2: Extract plaintext (everything before the newline) **
+//       size_t plaintextLength = newlinePos - buffer;
+//       strncpy(plaintext, buffer, plaintextLength);
+//       plaintext[plaintextLength] = '\0';  // Null-terminate
+
+//       // ** Debugging Output: Print extracted plaintext **
+//       printf("SERVER: Extracted plaintext: \"%s\"\n", plaintext);
+//       fflush(stdout);
+//   } else {
+//       printf("SERVER ERROR: No newline found in received message!\n");
+//       fflush(stdout);
+//       close(connectionSocket);
+//       exit(1);
+//   }
+// }
+
+
+
+// Function to extract plaintext (everything before the first newline)
+void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
   memset(plaintext, '\0', 1024);
-  memset(key, '\0', 1024);
 
-  char *saveptr;
+  printf("SERVER: Raw buffer before extracting plaintext:\n---START---\n%s\n---END---\n", buffer);
+  fflush(stdout);
 
-  // Extract plaintext
-  char *token = strtok_r(buffer, " ", &saveptr);
-  if (token != NULL) {
-      strncpy(plaintext, token, sizeof(plaintext) - 1);
-  }
+  // ** Step 1: Find the first newline **
+  char *newlinePos = strchr(buffer, '\n');
+  if (newlinePos != NULL) {
+      // ** Step 2: Extract plaintext (everything before the newline) **
+      size_t plaintextLength = newlinePos - buffer;
+      strncpy(plaintext, buffer, plaintextLength);
+      plaintext[plaintextLength] = '\0';  // Null-terminate
 
-  // Extract key
-  token = strtok_r(NULL, " ", &saveptr);
-  if (token != NULL) {
-      strncpy(key, token, sizeof(key) - 1);
-  }
-
-  // Validate key length
-  if (strlen(key) < strlen(plaintext)) {
-      fprintf(stderr, "ERROR: Key is too short\n");
+      // ** Debugging Output: Print extracted plaintext **
+      printf("SERVER: Extracted plaintext: \"%s\"\n", plaintext);
+      fflush(stdout);
+  } else {
+      printf("SERVER ERROR: No newline found in received message!\n");
+      fflush(stdout);
       close(connectionSocket);
       exit(1);
   }
+}
 
-  printf("SERVER: Parsed plaintext: \"%s\"\n", plaintext);
-  printf("SERVER: Parsed key: \"%s\"\n", key);
+// Function to extract key (everything after the first newline)
+void extractKey(char *buffer, char *key, int connectionSocket) {
+  memset(key, '\0', 1024);
+
+  // ** Step 1: Find the first newline **
+  char *newlinePos = strchr(buffer, '\n');
+  if (newlinePos != NULL) {
+      // ** Step 2: Extract key (everything after the newline) **
+      char *keyStart = newlinePos + 1;  // Move past the newline
+      strncpy(key, keyStart, 1023);  // Copy remaining data
+      key[1023] = '\0';  // Null-terminate just in case
+
+      // ** Debugging Output: Print extracted key **
+      printf("SERVER: Extracted key: \"%s\"\n", key);
+      fflush(stdout);
+  } else {
+      printf("SERVER ERROR: No newline found when extracting key!\n");
+      fflush(stdout);
+      close(connectionSocket);
+      exit(1);
+  }
+}
+
+void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
+  extractPlaintext(buffer, plaintext, connectionSocket);
+  extractKey(buffer, key, connectionSocket);
 }
 
 
-// Decryption algorithm
-void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
+///////////////////////////
 
+
+
+
+
+
+
+
+
+
+
+
+
+// Encryption algorithm
+void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
   int length = strlen(ciphertext);
-  if (ciphertext[length - 1] == '\n') {
-      length--; 
+
+  if (length > 0 && ciphertext[length - 1] == '\n') {
+      length--;
   }
 
   for (int i = 0; i < length; i++) {
       int cipherVal, keyVal, plainVal;
 
-      // Convert ciphertext character to numerical value
-      if (ciphertext[i] == ' ') {
-          cipherVal = 26;  
-      } else {
-          cipherVal = ciphertext[i] - 'A';  
-      }
+      cipherVal = (ciphertext[i] == ' ') ? 26 : (ciphertext[i] - 'A');
+      keyVal = (key[i] == ' ') ? 26 : (key[i] - 'A');
 
-      // Convert key character to numerical value
-      if (key[i] == ' ') {
-          keyVal = 26;  
-      } else {
-          keyVal = key[i] - 'A';  
-      }
+      plainVal = (cipherVal - keyVal + 27) % 27;  // Decryption formula
 
-      // Perform decryption calculation
-      plainVal = (cipherVal - keyVal + 27) % 27;  // Ensure non-negative result
+      plaintext[i] = (plainVal == 26) ? ' ' : ('A' + plainVal);
 
-      // Convert numerical value back to plaintext character
-      if (plainVal == 26) {
-          plaintext[i] = ' ';  
-      } else {
-          plaintext[i] = 'A' + plainVal;  
-      }
-
-      // Debug output for each character processed
       printf("Decrypting: ciphertext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> plaintext[%d] = '%c' (%d)\n",
-             i, ciphertext[i], cipherVal, i, key[i], keyVal, i, plaintext[i], plainVal);
+      i, ciphertext[i], cipherVal, 
+      i, key[i], keyVal, 
+      i, plaintext[i], plainVal);
   }
 
-  plaintext[length] = '\0';  // Null-terminate the string
+  plaintext[length] = '\n';
+  plaintext[length + 1] = '\0';
 }
-
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,40 +235,30 @@ void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
 
 
 
-int main(int argc, char *argv[]){
-  int connectionSocket, charsRead;
-  char buffer[256];
+int main(int argc, char *argv[]) {
+  int connectionSocket;
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
-  // Check usage & args
   if (argc < 2) { 
     fprintf(stderr,"USAGE: %s port\n", argv[0]); 
     exit(1);
   } 
   
-  // Create the socket that will listen for connections
   int listenSocket = socket(AF_INET, SOCK_STREAM, 0);
   if (listenSocket < 0) {
     error("ERROR opening socket");
   }
 
-  // Set up the address struct for the server socket
   setupAddressStruct(&serverAddress, atoi(argv[1]));
 
-  // Associate the socket to the port
-  if (bind(listenSocket, 
-          (struct sockaddr *)&serverAddress, 
-          sizeof(serverAddress)) < 0){
+  if (bind(listenSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0){
     error("ERROR on binding");
   }
 
-  // Start listening for connetions. Allow up to 5 connections to queue up
-  listen(listenSocket, 5); 
+  listen(listenSocket, 5);
   
-  // Accept a connection, blocking if one is not available until one connects
   while (1) {
-
     connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);
     if (connectionSocket < 0) {
         error("ERROR on accept");
@@ -206,47 +266,38 @@ int main(int argc, char *argv[]){
 
     printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
 
-    // Fork to handle the client connection
     pid_t spawnPid = fork();
 
     switch (spawnPid) {
-        case -1:  // Fork failed
+        case -1:
             printf("ERROR on fork\n");
             break;
 
-        case 0:  // Child Process
-          close(listenSocket); 
+        case 0:
+          close(listenSocket);
 
-          // ** Step 1: Receive the full message from the client **
           char buffer[1024];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));
-          printf("SERVER: Received full message: \"%s\"\n", buffer);
 
-          // ** Step 2: Parse plaintext and key **
-          char plaintext[1024], key[1024];
-          parseMessage(buffer, plaintext, key, connectionSocket);
+          char ciphertext[1024], key[1024];
+          parseMessage(buffer, ciphertext, key, connectionSocket);
 
-  
-         // ** Step 3: Encrpty Message **
-          char ciphertext[1024] = {0}; // Buffer for encrypted message
+          char plaintext[1024] = {0};
 
           printf("SERVER: Decrypting message...\n");
-          decryptMessage(plaintext, key, ciphertext);
+          decryptMessage(ciphertext, key, plaintext);
 
-          // ** Step 4: Send the full message to the client ***
-          printf("SERVER: Sending decrypted  message: \"%s\"\n", ciphertext);
-          sendMessage(connectionSocket, ciphertext);
+          sendMessage(connectionSocket, plaintext);
 
           close(connectionSocket);
           exit(0);
 
-        default:  // Parent Process
-            close(connectionSocket); // Parent closes the connection socket
+        default:
+            close(connectionSocket);
             break;
     }
   }
   
-  // Close the listening socket
-  close(listenSocket); 
+  close(listenSocket);
   return 0;
 }
