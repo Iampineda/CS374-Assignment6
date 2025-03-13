@@ -130,6 +130,36 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
+
+void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {
+    char handshakeMsg[16];
+    memset(handshakeMsg, '\0', sizeof(handshakeMsg));
+
+    // Send client identifier (ENC_CLIENT or DEC_CLIENT)
+    int charsWritten = send(socketFD, clientType, strlen(clientType), 0);
+    if (charsWritten < 0) {
+        fprintf(stderr, "Error: could not contact %s on port %d\n", expectedServerType, port);
+        close(socketFD);
+        exit(2);  // Exit with status 2 as required
+    }
+
+    // Receive server confirmation
+    int charsRead = recv(socketFD, handshakeMsg, sizeof(handshakeMsg) - 1, 0);
+    if (charsRead < 0) {
+        fprintf(stderr, "Error: could not contact %s on port %d\n", expectedServerType, port);
+        close(socketFD);
+        exit(2);
+    }
+
+    // Validate that the server is the correct one
+    if (strncmp(handshakeMsg, expectedServerType, strlen(expectedServerType)) != 0) {
+        fprintf(stderr, "Error: could not contact %s on port %d\n", expectedServerType, port);
+        close(socketFD);
+        exit(2);
+    }
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -165,6 +195,10 @@ int main(int argc, char *argv[]) {
     if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0){
         error("CLIENT: ERROR connecting");
     }
+
+    performHandshake(socketFD, "ENC_CLIENT", "ENC_SERVER", atoi(argv[3]));
+
+
 
     // Prepare the message to send (plaintext and key)
     char plaintext[1024] = {0};

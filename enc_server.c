@@ -182,6 +182,34 @@ void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket
 }
 
 
+void verifyClient(int connectionSocket, const char *expectedClientType, const char *serverType) {
+  char clientType[16];
+  memset(clientType, '\0', sizeof(clientType));
+
+  // Receive client identifier
+  int checkClient = recv(connectionSocket, clientType, sizeof(clientType) - 1, 0);
+  if (checkClient < 0) {
+      fprintf(stderr, "SERVER: ERROR reading handshake\n");
+      close(connectionSocket);
+      exit(1);
+  }
+
+  // Validate client type (ENC_CLIENT or DEC_CLIENT)
+  if (strncmp(clientType, expectedClientType, strlen(expectedClientType)) != 0) {
+      fprintf(stderr, "SERVER: ERROR - incorrect client type\n");
+      close(connectionSocket);
+      exit(1);
+  }
+
+  // Send server confirmation (ENC_SERVER or DEC_SERVER)
+  int handshakeSent = send(connectionSocket, serverType, strlen(serverType), 0);
+  if (handshakeSent < 0) {
+      fprintf(stderr, "SERVER: ERROR sending handshake response\n");
+      close(connectionSocket);
+      exit(1);
+  }
+}
+
 ///////////////////////////
 
 
@@ -282,6 +310,9 @@ int main(int argc, char *argv[]){
     if (connectionSocket < 0) {
         error("ERROR on accept");
     }
+
+    // After accepting the connection
+    verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  // For encryption server
 
     printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
 

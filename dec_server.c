@@ -97,36 +97,6 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 
 
 
-
-// void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
-//   memset(plaintext, '\0', 1024);
-//   memset(key, '\0', 1024);
-
-//   // ** Debugging: Print raw message before parsing **
-//   printf("SERVER: Raw buffer before parsing:\n---START---\n%s\n---END---\n", buffer);
-//   fflush(stdout);
-
-//   // ** Step 1: Find the first newline **
-//   char *newlinePos = strchr(buffer, '\n');
-//   if (newlinePos != NULL) {
-//       // ** Step 2: Extract plaintext (everything before the newline) **
-//       size_t plaintextLength = newlinePos - buffer;
-//       strncpy(plaintext, buffer, plaintextLength);
-//       plaintext[plaintextLength] = '\0';  // Null-terminate
-
-//       // ** Debugging Output: Print extracted plaintext **
-//       printf("SERVER: Extracted plaintext: \"%s\"\n", plaintext);
-//       fflush(stdout);
-//   } else {
-//       printf("SERVER ERROR: No newline found in received message!\n");
-//       fflush(stdout);
-//       close(connectionSocket);
-//       exit(1);
-//   }
-// }
-
-
-
 // Function to extract plaintext (everything before the first newline)
 void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
   memset(plaintext, '\0', 1024);
@@ -180,6 +150,35 @@ void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket
   extractPlaintext(buffer, plaintext, connectionSocket);
   extractKey(buffer, key, connectionSocket);
 }
+
+void verifyClient(int connectionSocket, const char *expectedClientType, const char *serverType) {
+  char clientType[16];
+  memset(clientType, '\0', sizeof(clientType));
+
+  // Receive client identifier
+  int checkClient = recv(connectionSocket, clientType, sizeof(clientType) - 1, 0);
+  if (checkClient < 0) {
+      fprintf(stderr, "SERVER: ERROR reading handshake\n");
+      close(connectionSocket);
+      exit(1);
+  }
+
+  // Validate client type (ENC_CLIENT or DEC_CLIENT)
+  if (strncmp(clientType, expectedClientType, strlen(expectedClientType)) != 0) {
+      fprintf(stderr, "SERVER: ERROR - incorrect client type\n");
+      close(connectionSocket);
+      exit(1);
+  }
+
+  // Send server confirmation (ENC_SERVER or DEC_SERVER)
+  int handshakeSent = send(connectionSocket, serverType, strlen(serverType), 0);
+  if (handshakeSent < 0) {
+      fprintf(stderr, "SERVER: ERROR sending handshake response\n");
+      close(connectionSocket);
+      exit(1);
+  }
+}
+
 
 
 ///////////////////////////
@@ -264,6 +263,8 @@ int main(int argc, char *argv[]) {
         error("ERROR on accept");
     }
 
+    verifyClient(connectionSocket, "DEC_CLIENT", "DEC_SERVER");  // For decryption server
+    
     printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
 
     pid_t spawnPid = fork();
