@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +7,7 @@
 #include <netinet/in.h>
 
 #define BUFFER_SIZE 70000
+#define x 10
 
 // Error function used for reporting issues
 void error(const char *msg) {

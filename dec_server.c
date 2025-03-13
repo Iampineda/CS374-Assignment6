@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 
 #define BUFFER_SIZE 70000
+#define x 10
 
 // Error function used for reporting issues
 void error(const char *msg) {
@@ -264,8 +265,3 @@ int main(int argc, char *argv[]){
   close(listenSocket); 
   return 0;
 }
-
-
-
-
-
