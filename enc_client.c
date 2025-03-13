@@ -154,12 +154,14 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
 int main(int argc, char *argv[]) {
     int socketFD;
     struct sockaddr_in serverAddress;
+    char buffer[BUFFER_SIZE];
 
     if (argc < 4) { 
         fprintf(stderr, "USAGE: %s plaintext key port\n", argv[0]); 
         exit(1);
     }
 
+   
 
     // Create a socket
     socketFD = socket(AF_INET, SOCK_STREAM, 0); 
@@ -180,20 +182,16 @@ int main(int argc, char *argv[]) {
 
 
 
-
+    // Prepare the message to send (plaintext and key)
     char plaintext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
 
     readFilesAndValidate(argv[1], argv[2], plaintext, key, BUFFER_SIZE);
 
-    // Instead of snprintf(), use strncat() safely:
-    char buffer[BUFFER_SIZE] = {0};
-    strncat(buffer, plaintext, BUFFER_SIZE - 2);
-    strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
-    strncat(buffer, key, BUFFER_SIZE - strlen(buffer) - 1);
-    strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
 
-
+    // Prepare the message to send (plaintext + key)
+    memset(buffer, '\0', sizeof(buffer));
+    snprintf(buffer, sizeof(buffer), "%s\n%s", plaintext, key);
 
     // Send message to server
     sendMessage(socketFD, buffer);
