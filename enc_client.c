@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
 
     // Close the socket
     close(socketFD); 
-    // printf("CLIENT: Connection closed.\n");
+    printf("CLIENT: Connection closed.\n");
 
     return 0;
 }
