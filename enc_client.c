@@ -117,8 +117,9 @@ void validatePlaintext(const char *filename) {
 
     char c;
     while ((c = fgetc(file)) != EOF) {
-        if (!((c >= 'A' && c <= 'Z') || c == '\n' || c == ' ' )) {
-            fprintf(stderr, "ERROR: input contains bad characters\n");
+        // Allow only uppercase A-Z, space, and newline
+        if (!( (c >= 'A' && c <= 'Z') || c == ' ' || c == '\n' )) {
+            fprintf(stderr, "ERROR: input contains bad characters in %s\n", filename);
             fclose(file);
             exit(1);
         }
@@ -126,6 +127,7 @@ void validatePlaintext(const char *filename) {
 
     fclose(file);
 }
+
 
 // Function: Copy contens of files to variable 
 void readFileContents(const char *filename, char *buffer, int maxSize) {
