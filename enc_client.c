@@ -29,7 +29,6 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber, char* hostn
     memcpy((char*) &address->sin_addr.s_addr, hostInfo->h_addr_list[0], hostInfo->h_length);
 }
 
-
 // -- Helper Functions --
 // ----------------------------------------------------------------------------------------------
 
@@ -119,7 +118,7 @@ void validatePlaintext(const char *filename) {
     char c;
     while ((c = fgetc(file)) != EOF) {
         if (!((c >= 'A' && c <= 'Z') || c == '\n' || c == ' ' )) {
-            fprintf(stderr, "ERROR: input contains bad characters");
+            fprintf(stderr, "ERROR: input contains bad characters\n");
             fclose(file);
             exit(1);
         }
@@ -173,7 +172,6 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
 
 // ----------------------------------------------------------------------------------------------
 
-
 int main(int argc, char *argv[]) {
     int socketFD;
     struct sockaddr_in serverAddress;
@@ -192,7 +190,6 @@ int main(int argc, char *argv[]) {
 
     // Set up the server address struct
     setupAddressStruct(&serverAddress, atoi(argv[3]), "localhost");
-
 
     // Connect to server
     if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0){
@@ -215,17 +212,16 @@ int main(int argc, char *argv[]) {
     readFileContents(argv[1], plaintext, sizeof(plaintext));
     readFileContents(argv[2], key, sizeof(key));
 
-
     // ** Step 4: Prepare message for sending
     strncat(buffer, plaintext, BUFFER_SIZE - 2);
     strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
     strncat(buffer, key, BUFFER_SIZE - strlen(buffer) - 1);
     strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
 
-     // ** Step 5: Send plaintext + key
+    // ** Step 5: Send plaintext + key
     sendMessage(socketFD, buffer);
 
-     // ** Step 6: Receive ciphertext
+    // ** Step 6: Receive ciphertext
     receiveMessage(socketFD, buffer, sizeof(buffer));
 
     // Print ciphertext to stdout 

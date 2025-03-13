@@ -154,7 +154,6 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
 
 // ----------------------------------------------------------------------------------------------
 
-
 int main(int argc, char *argv[]) {
     int socketFD;
     struct sockaddr_in serverAddress;

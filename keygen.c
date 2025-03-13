@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
     key[keyLength] = '\0';
     printf("%s\n", key);
     free(key);
-
-
+    
     return 0; 
 }

@@ -98,7 +98,7 @@ void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
       strncpy(plaintext, buffer, plaintextLength);
       plaintext[plaintextLength] = '\0';  // Null-terminate
   } else {
-      printf("SERVER ERROR: No newline found in received message!\n");
+      // printf("SERVER ERROR: No newline found in received message!\n");
       fflush(stdout);
       close(connectionSocket);
       exit(1);
@@ -117,7 +117,7 @@ void extractKey(char *buffer, char *key, int connectionSocket) {
       key[1023] = '\0'; 
 
   } else {
-      printf("SERVER ERROR: No newline found when extracting key!\n");
+      // printf("SERVER ERROR: No newline found when extracting key!\n");
       fflush(stdout);
       close(connectionSocket);
       exit(1);
@@ -189,7 +189,6 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
 }
 
 // ----------------------------------------------------------------------------------------------
-
 
 int main(int argc, char *argv[]){
   int connectionSocket, charsRead;

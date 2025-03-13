@@ -183,7 +183,6 @@ void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
 
 // ----------------------------------------------------------------------------------------------
 
-
 int main(int argc, char *argv[]){
   int connectionSocket, charsRead;
   char buffer[BUFFER_SIZE];
