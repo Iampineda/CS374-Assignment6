@@ -196,7 +196,6 @@ int main(int argc, char *argv[]) {
 
 
     // ** Step 3: Prepare message for sending
-    memset(buffer, '\0', sizeof(buffer));
     strncat(buffer, plaintext, BUFFER_SIZE - 2);
     strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
     strncat(buffer, key, BUFFER_SIZE - strlen(buffer) - 1);
