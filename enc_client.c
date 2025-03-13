@@ -81,7 +81,6 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 
 }
 
-// Function:
 // Function: Gets file size 
 long getFileSize(const char *filename) {
     FILE *file = fopen(filename, "r");
@@ -193,7 +192,6 @@ int main(int argc, char *argv[]) {
 
     readFileContents(argv[1], plaintext, sizeof(plaintext));
     readFileContents(argv[2], key, sizeof(key));
-
 
     // ** Step 3: Prepare message for sending
     strncat(buffer, plaintext, BUFFER_SIZE - 2);

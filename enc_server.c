@@ -30,6 +30,7 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
+
 // -- Helper Functions --
 // ----------------------------------------------------------------------------------------------
 
@@ -52,7 +53,6 @@ void sendMessage(int socketFD, char *message) {
   char endSignal = '\n';
   send(socketFD, &endSignal, 1, 0);
 
-  printf("Sent full message: \"%s\"\n", message);
 }
 
 // Function: 
@@ -86,31 +86,17 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
   }
 
   buffer[totalReceived] = '\0';  // Ensure null termination
-
-  // ** Debugging Output **
-  printf("SERVER: Received full message:\n---START---\n%s\n---END---\n", buffer);
-  fflush(stdout);
 }
-
 
 // Function: 
 void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
-  memset(plaintext, '\0', 1024);
+  memset(plaintext, '\0', BUFFER_SIZE);
 
-  printf("SERVER: Raw buffer before extracting plaintext:\n---START---\n%s\n---END---\n", buffer);
-  fflush(stdout);
-
-  // ** Step 1: Find the first newline **
   char *newlinePos = strchr(buffer, '\n');
   if (newlinePos != NULL) {
-      // ** Step 2: Extract plaintext (everything before the newline) **
       size_t plaintextLength = newlinePos - buffer;
       strncpy(plaintext, buffer, plaintextLength);
       plaintext[plaintextLength] = '\0';  // Null-terminate
-
-      // ** Debugging Output: Print extracted plaintext **
-      printf("SERVER: Extracted plaintext: \"%s\"\n", plaintext);
-      fflush(stdout);
   } else {
       printf("SERVER ERROR: No newline found in received message!\n");
       fflush(stdout);
@@ -121,19 +107,15 @@ void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
 
 // Function: 
 void extractKey(char *buffer, char *key, int connectionSocket) {
-  memset(key, '\0', 1024);
+  memset(key, '\0', BUFFER_SIZE);
 
-  // ** Step 1: Find the first newline **
+  
   char *newlinePos = strchr(buffer, '\n');
   if (newlinePos != NULL) {
-      // ** Step 2: Extract key (everything after the newline) **
-      char *keyStart = newlinePos + 1;  // Move past the newline
-      strncpy(key, keyStart, 1023);  // Copy remaining data
-      key[1023] = '\0';  // Null-terminate just in case
+      char *keyStart = newlinePos + 1;  
+      strncpy(key, keyStart, 1023);  
+      key[1023] = '\0'; 
 
-      // ** Debugging Output: Print extracted key **
-      printf("SERVER: Extracted key: \"%s\"\n", key);
-      fflush(stdout);
   } else {
       printf("SERVER ERROR: No newline found when extracting key!\n");
       fflush(stdout);
@@ -147,7 +129,6 @@ void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket
   extractPlaintext(buffer, plaintext, connectionSocket);
   extractKey(buffer, key, connectionSocket);
 }
-
 
 // Function: 
 void verifyClient(int connectionSocket, const char *expectedClientType, const char *serverType) {
@@ -178,7 +159,6 @@ void verifyClient(int connectionSocket, const char *expectedClientType, const ch
   }
 }
 
-
 // FUnction: 
 void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
   int length = strlen(plaintext);
@@ -201,14 +181,8 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
       // Convert numeric value back to character
       ciphertext[i] = (cipherVal == 26) ? ' ' : ('A' + cipherVal);
 
-      // ** Debugging Output **
-      // printf("Encrypting: plaintext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> ciphertext[%d] = '%c' (%d)\n",
-      // i, plaintext[i], plainVal, 
-      // i, key[i], keyVal, 
-      // i, ciphertext[i], cipherVal);
   }
 
-  
   // Add newline at the end (per project requirements)
   ciphertext[length] = '\n';
   ciphertext[length + 1] = '\0';  // Ensure null termination
