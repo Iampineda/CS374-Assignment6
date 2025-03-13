@@ -181,8 +181,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    validateKeyLength(argv[1], argv[2]);  // Validate key length before sending
-
     // Create a socket
     socketFD = socket(AF_INET, SOCK_STREAM, 0); 
     if (socketFD < 0){
@@ -203,6 +201,8 @@ int main(int argc, char *argv[]) {
 
 
     // Prepare the message to send (plaintext and key)
+    validateKeyLength(argv[1], argv[2]);  // Validate key length before sending
+    
     char plaintext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
 
