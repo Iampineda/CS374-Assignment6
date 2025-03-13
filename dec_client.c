@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -108,27 +109,6 @@ void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
     }
 }
 
-// Function to validate the plaintext file for only valid characters
-void validateCiphertext(const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error: could not open file %s\n", filename);
-        exit(1);
-    }
-
-    char c;
-    while ((c = fgetc(file)) != EOF) {
-        // Allow only uppercase A-Z, space, and newline
-        if (!( (c >= 'A' && c <= 'Z') || c == ' ' || c == '\n' )) {
-            fprintf(stderr, "ERROR: input contains bad characters i");
-            fclose(file);
-            exit(1);
-        }
-    }
-
-    fclose(file);
-}
-
 // Function: Copy contens of files to variable 
 void readFileContents(const char *filename, char *buffer, int maxSize) {
     FILE *file = fopen(filename, "r");
@@ -142,7 +122,6 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     // Strip newline character if present
     buffer[strcspn(buffer, "\n")] = '\0';
 }
-
 
 // Function: 
 void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {
@@ -205,27 +184,24 @@ int main(int argc, char *argv[]) {
 
      // ** Step 1: Check legnth of key >= plaintext **
     validateKeyLength(argv[1], argv[2]);  
-    
-     // ** Step 2: check if ciphertext has any invalid characters 
-     validateCiphertext(argv[1]);
 
-    // ** Step 3: Copy key and ciphertext
+    // ** Step 2: Copy key and ciphertext
     char ciphertext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
 
     readFileContents(argv[1], ciphertext, sizeof(ciphertext));
     readFileContents(argv[2], key, sizeof(key));
 
-    // ** Step 4: Prepare message for sending
+    // ** Step 3: Prepare message for sending
     strncat(buffer, ciphertext, BUFFER_SIZE - 2);
     strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
     strncat(buffer, key, BUFFER_SIZE - strlen(buffer) - 1);
     strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
 
-     // ** Step 5: Send plaintext + key
+     // ** Step 4: Send plaintext + key
     sendMessage(socketFD, buffer);
 
-     // ** Step 6: Receive ciphertext
+     // ** Step 5: Receive ciphertext
     receiveMessage(socketFD, buffer, sizeof(buffer));
 
     // Print ciphertext to stdout 
@@ -236,5 +212,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-
