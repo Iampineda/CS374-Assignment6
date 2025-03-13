@@ -108,6 +108,22 @@ void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
     }
 }
 
+// Function to validate the plaintext file for only valid characters
+void validatePlaintext(const char *plaintextFileName) {
+    FILE *file = fopen(plaintextFileName, "r");
+
+    char c;
+    while ((c = fgetc(file)) != EOF) {
+        if (!((c >= 'A' && c <= 'Z') || c == '\n' || c == ' ' )) {
+            fprintf(stderr, "ERROR: input contains bad characters");
+            fclose(file);
+            exit(1);
+        }
+    }
+
+    fclose(file);
+}
+
 // Function: Copy contens of files to variable 
 void readFileContents(const char *filename, char *buffer, int maxSize) {
     FILE *file = fopen(filename, "r");
@@ -120,19 +136,6 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
 
     // Strip newline character if present
     buffer[strcspn(buffer, "\n")] = '\0';
-}
-
-// Function: 
-void validatePlaintext(const char *plaintext) {
-    for (int i = 0; plaintext[i] != '\0'; i++) {
-        char ch = plaintext[i];
-
-        // Check if not A-Z, ' ', or '\n'
-        if (!((ch >= 'A' && ch <= 'Z') || ch == ' ' || ch == '\n')) {
-            fprintf(stderr, "Error: input contains bad characters");
-            exit(1);
-        }
-    }
 }
 
 // Function: 
@@ -197,16 +200,17 @@ int main(int argc, char *argv[]) {
 
      // ** Step 1: Check legnth of key >= plaintext **
     validateKeyLength(argv[1], argv[2]);  
+
+     // ** Step 2: check if plaintext has any invalid characters 
+    validatePlaintext(argv[1]);
     
-    // ** Step 2: Copy key and plaintext
+    // ** Step 3: Copy key and plaintext
     char plaintext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
 
     readFileContents(argv[1], plaintext, sizeof(plaintext));
     readFileContents(argv[2], key, sizeof(key));
 
-    // ** Step 3: check if plaintext has any invalid characters 
-    // validatePlaintext(plaintext);
 
     // ** Step 4: Prepare message for sending
     strncat(buffer, plaintext, BUFFER_SIZE - 2);
