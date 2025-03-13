@@ -108,38 +108,67 @@ void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
 }
 
 // Function to validate the plaintext file for only valid characters
-void validatePlaintext(const char *filename) {
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
-        fprintf(stderr, "Error: could not open file %s\n", filename);
-        exit(1);
-    }
+// void validatePlaintext(const char *filename) {
+//     FILE *file = fopen(filename, "r");
+//     if (file == NULL) {
+//         fprintf(stderr, "Error: could not open file %s\n", filename);
+//         exit(1);
+//     }
 
-    char c;
-    while ((c = fgetc(file)) != EOF) {
-        // Allow only uppercase A-Z, space, and newline
-        if (!( (c >= 'A' && c <= 'Z') || c == ' ' || c == '\n' )) {
-            fprintf(stderr, "ERROR: input contains bad characters in %s\n", filename);
-            fclose(file);
-            exit(1);
-        }
-    }
+//     char c;
+//     while ((c = fgetc(file)) != EOF) {
+//         // Allow only uppercase A-Z, space, and newline
+//         if (!( (c >= 'A' && c <= 'Z') || c == ' ' || c == '\n' )) {
+//             fprintf(stderr, "ERROR: input contains bad characters in %s\n", filename);
+//             fclose(file);
+//             exit(1);
+//         }
+//     }
 
-    fclose(file);
-}
+//     fclose(file);
+// }
 
 
-// Function: Copy contens of files to variable 
+// // Function: Copy contens of files to variable 
+// void readFileContents(const char *filename, char *buffer, int maxSize) {
+//     FILE *file = fopen(filename, "r");
+//     if (file == NULL) {
+//         fprintf(stderr, "Error: could not open %s\n", filename);
+//         exit(1);
+//     }
+//     fgets(buffer, maxSize, file);
+//     fclose(file);
+
+//     // Strip newline character if present
+//     buffer[strcspn(buffer, "\n")] = '\0';
+// }
+
+// Function: Copy contents of files to variable and validate characters
 void readFileContents(const char *filename, char *buffer, int maxSize) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         fprintf(stderr, "Error: could not open %s\n", filename);
         exit(1);
     }
-    fgets(buffer, maxSize, file);
+
+    // Read the file character by character and validate
+    char c;
+    int index = 0;
+    while ((c = fgetc(file)) != EOF && index < maxSize - 1) {
+        // Validate character (Only A-Z, space, and newline)
+        if (!((c >= 'A' && c <= 'Z') || c == ' ' || c == '\n')) {
+            fprintf(stderr, "ERROR: input contains bad characters\n");
+            fclose(file);
+            exit(1);
+        }
+
+        buffer[index++] = c;
+    }
+    buffer[index] = '\0'; // Null-terminate the string
+
     fclose(file);
 
-    // Strip newline character if present
+    // Strip newline character if present at the end
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
@@ -205,7 +234,7 @@ int main(int argc, char *argv[]) {
     validateKeyLength(argv[1], argv[2]);  
 
      // ** Step 2: check if plaintext has any invalid characters 
-    validatePlaintext(argv[1]);
+    // validatePlaintext(argv[1]);
     
     // ** Step 3: Copy key and plaintext
     char plaintext[BUFFER_SIZE] = {0};
