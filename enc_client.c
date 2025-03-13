@@ -119,7 +119,7 @@ void validatePlaintext(const char *filename) {
     while ((c = fgetc(file)) != EOF) {
         // Allow only uppercase A-Z, space, and newline
         if (!( (c >= 'A' && c <= 'Z') || c == ' ' || c == '\n' )) {
-            fprintf(stderr, "ERROR: input contains bad characters in %s\n", filename);
+            fprintf(stderr, "ERROR: input contains bad characters i");
             fclose(file);
             exit(1);
         }
