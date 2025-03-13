@@ -30,15 +30,10 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber, char* hostn
 }
 
 
+// -- Helper Functions --
+// ----------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
+// Function: 
 void sendMessage(int socketFD, char *message) {
     int totalSent = 0;
     int messageLength = strlen(message);
@@ -60,6 +55,7 @@ void sendMessage(int socketFD, char *message) {
     // printf("Sent full message: \"%s\"\n", message);
 }
 
+// Function: 
 void receiveMessage(int socketFD, char *buffer, int bufferSize) {
     memset(buffer, '\0', bufferSize);
     int totalReceived = 0;
@@ -85,8 +81,7 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 
 }
 
-
-// Function to validate that the key is not shorter than the plaintext
+// Function:
 void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
     // Open the plaintext file
     FILE *plaintextFile = fopen(plaintextFileName, "r");
@@ -119,6 +114,7 @@ void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
     }
 }
 
+// Function:
 void readFileContents(const char *filename, char *buffer, int maxSize) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -132,7 +128,7 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
-
+// Function: 
 void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {
     char handshakeMsg[16];
     memset(handshakeMsg, '\0', sizeof(handshakeMsg));
@@ -161,14 +157,7 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
     }
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
+// ----------------------------------------------------------------------------------------------
 
 
 int main(int argc, char *argv[]) {
@@ -196,30 +185,30 @@ int main(int argc, char *argv[]) {
         error("CLIENT: ERROR connecting");
     }
 
+    // ** Step 0: Check Correct Client and Server Connection **
     performHandshake(socketFD, "ENC_CLIENT", "ENC_SERVER", atoi(argv[3]));
 
-
-
-    // Prepare the message to send (plaintext and key)
-    validateKeyLength(argv[1], argv[2]);  // Validate key length before sending
+     // ** Step 1: Check legnth of key >= plaintext **
+    validateKeyLength(argv[1], argv[2]);  
     
+    // ** Step 2: Copy key and plaintext
     char plaintext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
 
     readFileContents(argv[1], plaintext, sizeof(plaintext));
     readFileContents(argv[2], key, sizeof(key));
 
-    // Prepare the message to send (plaintext + key)
+    // ** Step 3: Prepare message for sending
     memset(buffer, '\0', sizeof(buffer));
     snprintf(buffer, sizeof(buffer), "%s\n%s", plaintext, key);
 
-    // Send message to server
+     // ** Step 4: Send plaintext + key
     sendMessage(socketFD, buffer);
 
-    // Receive response from server
+     // ** Step 5: Receive ciphertext
     receiveMessage(socketFD, buffer, sizeof(buffer));
 
-    // Print ciphertext to stdout (ensuring it ends with a newline)
+    // Print ciphertext to stdout 
     printf("%s\n", buffer);
 
     // Close the socket

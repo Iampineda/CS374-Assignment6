@@ -256,7 +256,6 @@ int main(int argc, char *argv[]){
         error("ERROR on accept");
     }
 
-  
     // Concurrency Handling 
     pid_t spawnPid = fork();
     switch (spawnPid) {
@@ -268,7 +267,7 @@ int main(int argc, char *argv[]){
 
           close(listenSocket); 
 
-           // ** Step 0: Check Correct Client and Server Connection **
+          // ** Step 0: Check Correct Client and Server Connection **
           verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  
 
           // ** Step 1: Receive the full message from the client **
