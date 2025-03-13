@@ -163,7 +163,7 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
 int main(int argc, char *argv[]) {
     int socketFD;
     struct sockaddr_in serverAddress;
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
 
     if (argc < 4) { 
         fprintf(stderr, "USAGE: %s plaintext key port\n", argv[0]); 
@@ -200,7 +200,10 @@ int main(int argc, char *argv[]) {
 
     // ** Step 3: Prepare message for sending
     memset(buffer, '\0', sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "%s\n%s", plaintext, key);
+    strncat(buffer, plaintext, BUFFER_SIZE - 2);
+    strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
+    strncat(buffer, key, BUFFER_SIZE - strlen(buffer) - 1);
+    strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
 
      // ** Step 4: Send plaintext + key
     sendMessage(socketFD, buffer);
