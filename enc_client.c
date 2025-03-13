@@ -109,8 +109,12 @@ void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
 }
 
 // Function to validate the plaintext file for only valid characters
-void validatePlaintext(const char *plaintextFileName) {
-    FILE *file = fopen(plaintextFileName, "r");
+void validatePlaintext(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: could not open file %s\n", filename);
+        exit(1);
+    }
 
     char c;
     while ((c = fgetc(file)) != EOF) {
