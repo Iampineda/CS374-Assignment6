@@ -29,7 +29,7 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
-//-----------------------------------------------------------------------------------------------------------------//
+//////////////////////////////////////////////////////////////////////////////////////////////
 
 void sendMessage(int socketFD, char *message) {
   int totalSent = 0;
@@ -264,7 +264,9 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
 
 
 
-//-----------------------------------------------------------------------------------------------------------------//
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 
@@ -274,6 +276,7 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
 
 int main(int argc, char *argv[]){
   int connectionSocket, charsRead;
+  char buffer[BUFFER_SIZE];
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
@@ -310,8 +313,12 @@ int main(int argc, char *argv[]){
         error("ERROR on accept");
     }
 
- 
+
+    printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
+
+    // Fork to handle the client connection
     pid_t spawnPid = fork();
+
     switch (spawnPid) {
         case -1:  // Fork failed
             printf("ERROR on fork\n");
@@ -319,10 +326,7 @@ int main(int argc, char *argv[]){
 
         case 0:  // Child Process
           close(listenSocket); 
-
-           // ** Step 0: Verify if valid connection ** 
-          verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER"); 
-
+          verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  // For encryption server
           // ** Step 1: Receive the full message from the client **
           char buffer[BUFFER_SIZE];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));
@@ -334,9 +338,11 @@ int main(int argc, char *argv[]){
   
          // ** Step 3: Encrpty Message **
           char ciphertext[BUFFER_SIZE] = {0}; // Buffer for encrypted message
+
+          printf("SERVER: Encrypting message...\n");
           encryptMessage(plaintext, key, ciphertext);
 
-          // ** Step 4: Send the full message to the client **
+          // ** Step 4: Send the full message to the client ***
           sendMessage(connectionSocket, ciphertext);
 
           close(connectionSocket);
