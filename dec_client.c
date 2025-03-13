@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -123,6 +122,7 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
+
 // Function: 
 void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {
     char handshakeMsg[16];
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
 
      // ** Step 1: Check legnth of key >= plaintext **
     validateKeyLength(argv[1], argv[2]);  
-
+    
     // ** Step 2: Copy key and ciphertext
     char ciphertext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
@@ -212,3 +212,5 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+
