@@ -54,111 +54,188 @@ void sendMessage(int socketFD, char *message) {
   printf("Sent full message: \"%s\"\n", message);
 }
 
+
+
+
+
+
+
+
+
+/////////////////////
 void receiveMessage(int socketFD, char *buffer, int bufferSize) {
   memset(buffer, '\0', bufferSize);
   int totalReceived = 0;
   int charsRead;
-  char tempBuffer[2];
 
   while (totalReceived < bufferSize - 1) {
-      charsRead = recv(socketFD, tempBuffer, 1, 0); // Read 1 byte at a time
+      charsRead = recv(socketFD, buffer + totalReceived, bufferSize - totalReceived - 1, 0);
+      
       if (charsRead < 0) {
           perror("ERROR reading from socket");
           close(socketFD);
           exit(1);
       }
-      if (charsRead == 0 || tempBuffer[0] == '\n') { // End if client closed or newline received
+      if (charsRead == 0) {  // Stop if connection closes
           break;
       }
-      buffer[totalReceived] = tempBuffer[0];
-      totalReceived++;
+
+      totalReceived += charsRead;
+
+      // ** Check if two newlines exist (plaintext + key) **
+      char *firstNewline = strchr(buffer, '\n');
+      if (firstNewline != NULL) {
+          char *secondNewline = strchr(firstNewline + 1, '\n');  // Look for second newline
+          if (secondNewline != NULL) {
+              break;  // We have received both lines
+          }
+      }
   }
 
-  buffer[totalReceived] = '\0'; // Null-terminate the received message
-  printf("Received full message: \"%s\"\n", buffer);
+  buffer[totalReceived] = '\0';  // Ensure null termination
+
+  // ** Debugging Output **
+  printf("SERVER: Received full message:\n---START---\n%s\n---END---\n", buffer);
+  fflush(stdout);
 }
 
 
-// Function to parse message received from the client
-void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
+
+
+// void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
+//   memset(plaintext, '\0', 1024);
+//   memset(key, '\0', 1024);
+
+//   // ** Debugging: Print raw message before parsing **
+//   printf("SERVER: Raw buffer before parsing:\n---START---\n%s\n---END---\n", buffer);
+//   fflush(stdout);
+
+//   // ** Step 1: Find the first newline **
+//   char *newlinePos = strchr(buffer, '\n');
+//   if (newlinePos != NULL) {
+//       // ** Step 2: Extract plaintext (everything before the newline) **
+//       size_t plaintextLength = newlinePos - buffer;
+//       strncpy(plaintext, buffer, plaintextLength);
+//       plaintext[plaintextLength] = '\0';  // Null-terminate
+
+//       // ** Debugging Output: Print extracted plaintext **
+//       printf("SERVER: Extracted plaintext: \"%s\"\n", plaintext);
+//       fflush(stdout);
+//   } else {
+//       printf("SERVER ERROR: No newline found in received message!\n");
+//       fflush(stdout);
+//       close(connectionSocket);
+//       exit(1);
+//   }
+// }
+
+
+
+// Function to extract plaintext (everything before the first newline)
+void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
   memset(plaintext, '\0', 1024);
-  memset(key, '\0', 1024);
 
-  char *saveptr;
+  printf("SERVER: Raw buffer before extracting plaintext:\n---START---\n%s\n---END---\n", buffer);
+  fflush(stdout);
 
-  // Extract plaintext
-  char *token = strtok_r(buffer, " ", &saveptr);
-  if (token != NULL) {
-      strncpy(plaintext, token, sizeof(plaintext) - 1);
-  }
+  // ** Step 1: Find the first newline **
+  char *newlinePos = strchr(buffer, '\n');
+  if (newlinePos != NULL) {
+      // ** Step 2: Extract plaintext (everything before the newline) **
+      size_t plaintextLength = newlinePos - buffer;
+      strncpy(plaintext, buffer, plaintextLength);
+      plaintext[plaintextLength] = '\0';  // Null-terminate
 
-  // Extract key
-  token = strtok_r(NULL, " ", &saveptr);
-  if (token != NULL) {
-      strncpy(key, token, sizeof(key) - 1);
-  }
-
-  // Validate key length
-  if (strlen(key) < strlen(plaintext)) {
-      fprintf(stderr, "ERROR: Key is too short\n");
+      // ** Debugging Output: Print extracted plaintext **
+      printf("SERVER: Extracted plaintext: \"%s\"\n", plaintext);
+      fflush(stdout);
+  } else {
+      printf("SERVER ERROR: No newline found in received message!\n");
+      fflush(stdout);
       close(connectionSocket);
       exit(1);
   }
-
-  printf("SERVER: Parsed plaintext: \"%s\"\n", plaintext);
-  printf("SERVER: Parsed key: \"%s\"\n", key);
 }
+
+// Function to extract key (everything after the first newline)
+void extractKey(char *buffer, char *key, int connectionSocket) {
+  memset(key, '\0', 1024);
+
+  // ** Step 1: Find the first newline **
+  char *newlinePos = strchr(buffer, '\n');
+  if (newlinePos != NULL) {
+      // ** Step 2: Extract key (everything after the newline) **
+      char *keyStart = newlinePos + 1;  // Move past the newline
+      strncpy(key, keyStart, 1023);  // Copy remaining data
+      key[1023] = '\0';  // Null-terminate just in case
+
+      // ** Debugging Output: Print extracted key **
+      printf("SERVER: Extracted key: \"%s\"\n", key);
+      fflush(stdout);
+  } else {
+      printf("SERVER ERROR: No newline found when extracting key!\n");
+      fflush(stdout);
+      close(connectionSocket);
+      exit(1);
+  }
+}
+
+void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
+  extractPlaintext(buffer, plaintext, connectionSocket);
+  extractKey(buffer, key, connectionSocket);
+}
+
+
+///////////////////////////
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Encryption algorithm
-#include <stdio.h>
-#include <string.h>
-
 void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
-    int length = strlen(plaintext);
+  int length = strlen(plaintext);
 
-    // Ignore newline at the end if present
-    if (length > 0 && plaintext[length - 1] == '\n') {
-        length--;
-    }
+  // Ignore newline at the end if present
+  if (length > 0 && plaintext[length - 1] == '\n') {
+      length--;
+  }
 
-    for (int i = 0; i < length; i++) {
-        int plainVal, keyVal, cipherVal;
+  for (int i = 0; i < length; i++) {
+      int plainVal, keyVal, cipherVal;
 
-        // Convert plaintext character to numeric value
-        if (plaintext[i] == ' ') {
-            plainVal = 26;  // Space is mapped to 26
-        } else {
-            plainVal = plaintext[i] - 'A';  // Convert 'A'-'Z' to 0-25
-        }
+      // Convert plaintext character to numeric value
+      plainVal = (plaintext[i] == ' ') ? 26 : (plaintext[i] - 'A');
+      keyVal = (key[i] == ' ') ? 26 : (key[i] - 'A');
 
-        // Convert key character to numeric value
-        if (key[i] == ' ') {
-            keyVal = 26;  // Space is mapped to 26
-        } else {
-            keyVal = key[i] - 'A';  // Convert 'A'-'Z' to 0-25
-        }
+      // Apply the One-Time Pad encryption formula: (plainVal + keyVal) % 27
+      cipherVal = (plainVal + keyVal) % 27;
 
-        // Apply the One-Time Pad encryption formula: (plainVal + keyVal) % 27
-        cipherVal = (plainVal + keyVal) % 27;
+      // Convert numeric value back to character
+      ciphertext[i] = (cipherVal == 26) ? ' ' : ('A' + cipherVal);
 
-        // Convert numeric value back to character
-        if (cipherVal == 26) {
-            ciphertext[i] = ' ';  // Map 26 back to a space
-        } else {
-            ciphertext[i] = 'A' + cipherVal;  // Convert 0-25 to 'A'-'Z'
-        }
+      // ** Debugging Output **
+      printf("Encrypting: plaintext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> ciphertext[%d] = '%c' (%d)\n",
+      i, plaintext[i], plainVal, 
+      i, key[i], keyVal, 
+      i, ciphertext[i], cipherVal);
+  }
 
-        // ** Debugging Output **
-        printf("Encrypting: plaintext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> ciphertext[%d] = '%c' (%d)\n",
-               i, plaintext[i], plainVal, 
-               i, key[i], keyVal, 
-               i, ciphertext[i], cipherVal);
-    }
-
-    // Ensure proper null termination
-    ciphertext[length] = '\0'; 
+  
+  // Add newline at the end (per project requirements)
+  ciphertext[length] = '\n';
+  ciphertext[length + 1] = '\0';  // Ensure null termination
 }
+
+
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,7 +303,6 @@ int main(int argc, char *argv[]){
           // ** Step 1: Receive the full message from the client **
           char buffer[1024];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));
-          printf("SERVER: Received full message: \"%s\"\n", buffer);
 
           // ** Step 2: Parse plaintext and key **
           char plaintext[1024], key[1024];
@@ -240,7 +316,6 @@ int main(int argc, char *argv[]){
           encryptMessage(plaintext, key, ciphertext);
 
           // ** Step 4: Send the full message to the client ***
-          printf("SERVER: Sending encrypted message: \"%s\"\n", ciphertext);
           sendMessage(connectionSocket, ciphertext);
 
           close(connectionSocket);
