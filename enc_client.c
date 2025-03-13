@@ -122,6 +122,18 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
+// Function: 
+void validatePlaintext(const char *plaintext) {
+    for (int i = 0; plaintext[i] != '\0'; i++) {
+        char ch = plaintext[i];
+
+        // Check if not A-Z, ' ', or '\n'
+        if (!((ch >= 'A' && ch <= 'Z') || ch == ' ' || ch == '\n')) {
+            fprintf(stderr, "Error: input contains bad characters");
+            exit(1);
+        }
+    }
+}
 
 // Function: 
 void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {
@@ -193,16 +205,19 @@ int main(int argc, char *argv[]) {
     readFileContents(argv[1], plaintext, sizeof(plaintext));
     readFileContents(argv[2], key, sizeof(key));
 
-    // ** Step 3: Prepare message for sending
+    // ** Step 3: check if plaintext has any invalid characters 
+    validatePlaintext(plaintext);
+
+    // ** Step 4: Prepare message for sending
     strncat(buffer, plaintext, BUFFER_SIZE - 2);
     strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
     strncat(buffer, key, BUFFER_SIZE - strlen(buffer) - 1);
     strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
 
-     // ** Step 4: Send plaintext + key
+     // ** Step 5: Send plaintext + key
     sendMessage(socketFD, buffer);
 
-     // ** Step 5: Receive ciphertext
+     // ** Step 6: Receive ciphertext
     receiveMessage(socketFD, buffer, sizeof(buffer));
 
     // Print ciphertext to stdout 
