@@ -82,39 +82,34 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 }
 
 // Function:
+// Function: Gets file size 
+long getFileSize(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: could not open file %s\n", filename);
+        exit(1);
+    }
+
+    fseek(file, 0, SEEK_END);  // Move to the end of the file
+    long size = ftell(file);   // Get the current position (file size)
+    fclose(file);
+
+    return size;
+}
+
+// Function: Checks if length key >= plaintext
 void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
-    // Open the plaintext file
-    FILE *plaintextFile = fopen(plaintextFileName, "r");
-    if (plaintextFile == NULL) {
-        fprintf(stderr, "Error: could not open plaintext file\n");
-        exit(1);
-    }
-
-    // Read plaintext content
-    char plaintext[BUFFER_SIZE] = {0};
-    fgets(plaintext, sizeof(plaintext) - 1, plaintextFile);
-    fclose(plaintextFile);
-
-    // Open the key file
-    FILE *keyFile = fopen(keyFileName, "r");
-    if (keyFile == NULL) {
-        fprintf(stderr, "Error: could not open key file\n");
-        exit(1);
-    }
-
-    // Read key content
-    char key[BUFFER_SIZE] = {0};
-    fgets(key, sizeof(key) - 1, keyFile);
-    fclose(keyFile);
+    long plaintextSize = getFileSize(plaintextFileName);
+    long keySize = getFileSize(keyFileName);
 
     // Check if key is shorter than plaintext
-    if (strlen(key) < strlen(plaintext)) {
-        fprintf(stderr, "Error: key ‘%s’ is too short\n", keyFileName);
-        exit(1);  // Ensure exit status is 1
+    if (keySize < plaintextSize) {
+        fprintf(stderr, "Error: key '%s' is too short\n", keyFileName);
+        exit(1);
     }
 }
 
-// Function:
+// Function: Copy contens of files to variable 
 void readFileContents(const char *filename, char *buffer, int maxSize) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -127,7 +122,6 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     // Strip newline character if present
     buffer[strcspn(buffer, "\n")] = '\0';
 }
-
 
 
 // Function: 
