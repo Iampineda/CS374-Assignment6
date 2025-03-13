@@ -30,8 +30,10 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+// -- Helper Functions --
+// ----------------------------------------------------------------------------------------------
 
+// Function: 
 void sendMessage(int socketFD, char *message) {
   int totalSent = 0;
   int messageLength = strlen(message);
@@ -53,15 +55,7 @@ void sendMessage(int socketFD, char *message) {
   printf("Sent full message: \"%s\"\n", message);
 }
 
-
-
-
-
-
-
-
-
-/////////////////////
+// Function: 
 void receiveMessage(int socketFD, char *buffer, int bufferSize) {
   memset(buffer, '\0', bufferSize);
   int totalReceived = 0;
@@ -99,38 +93,7 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 }
 
 
-
-
-// void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
-//   memset(plaintext, '\0', 1024);
-//   memset(key, '\0', 1024);
-
-//   // ** Debugging: Print raw message before parsing **
-//   printf("SERVER: Raw buffer before parsing:\n---START---\n%s\n---END---\n", buffer);
-//   fflush(stdout);
-
-//   // ** Step 1: Find the first newline **
-//   char *newlinePos = strchr(buffer, '\n');
-//   if (newlinePos != NULL) {
-//       // ** Step 2: Extract plaintext (everything before the newline) **
-//       size_t plaintextLength = newlinePos - buffer;
-//       strncpy(plaintext, buffer, plaintextLength);
-//       plaintext[plaintextLength] = '\0';  // Null-terminate
-
-//       // ** Debugging Output: Print extracted plaintext **
-//       printf("SERVER: Extracted plaintext: \"%s\"\n", plaintext);
-//       fflush(stdout);
-//   } else {
-//       printf("SERVER ERROR: No newline found in received message!\n");
-//       fflush(stdout);
-//       close(connectionSocket);
-//       exit(1);
-//   }
-// }
-
-
-
-// Function to extract plaintext (everything before the first newline)
+// Function: 
 void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
   memset(plaintext, '\0', 1024);
 
@@ -156,7 +119,7 @@ void extractPlaintext(char *buffer, char *plaintext, int connectionSocket) {
   }
 }
 
-// Function to extract key (everything after the first newline)
+// Function: 
 void extractKey(char *buffer, char *key, int connectionSocket) {
   memset(key, '\0', 1024);
 
@@ -179,12 +142,14 @@ void extractKey(char *buffer, char *key, int connectionSocket) {
   }
 }
 
+// Function: 
 void parseMessage(char *buffer, char *plaintext, char *key, int connectionSocket) {
   extractPlaintext(buffer, plaintext, connectionSocket);
   extractKey(buffer, key, connectionSocket);
 }
 
 
+// Function: 
 void verifyClient(int connectionSocket, const char *expectedClientType, const char *serverType) {
   char clientType[16];
   memset(clientType, '\0', sizeof(clientType));
@@ -213,21 +178,8 @@ void verifyClient(int connectionSocket, const char *expectedClientType, const ch
   }
 }
 
-///////////////////////////
 
-
-
-
-
-
-
-
-
-
-
-
-
-// Encryption algorithm
+// FUnction: 
 void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
   int length = strlen(plaintext);
 
@@ -262,17 +214,7 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
   ciphertext[length + 1] = '\0';  // Ensure null termination
 }
 
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
+// ----------------------------------------------------------------------------------------------
 
 
 int main(int argc, char *argv[]){
@@ -326,6 +268,7 @@ int main(int argc, char *argv[]){
             break;
 
         case 0:  // Child Process
+        
           close(listenSocket); 
           verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  // For encryption server
           // ** Step 1: Receive the full message from the client **

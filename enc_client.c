@@ -31,15 +31,10 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber, char* hostn
 }
 
 
+// -- Helper Functions --
+// ----------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
+// Function: 
 void sendMessage(int socketFD, char *message) {
     int totalSent = 0;
     int messageLength = strlen(message);
@@ -61,6 +56,7 @@ void sendMessage(int socketFD, char *message) {
     // printf("Sent full message: \"%s\"\n", message);
 }
 
+// Function: 
 void receiveMessage(int socketFD, char *buffer, int bufferSize) {
     memset(buffer, '\0', bufferSize);
     int totalReceived = 0;
@@ -87,7 +83,7 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 }
 
 
-// Function to validate that the key is not shorter than the plaintext
+// Function: 
 void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
     // Open the plaintext file
     FILE *plaintextFile = fopen(plaintextFileName, "r");
@@ -120,6 +116,7 @@ void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
     }
 }
 
+// Function: 
 void readFileContents(const char *filename, char *buffer, int maxSize) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -134,6 +131,7 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
 }
 
 
+// Function: 
 void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {
     char handshakeMsg[16];
     memset(handshakeMsg, '\0', sizeof(handshakeMsg));
@@ -162,14 +160,7 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
     }
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
+// ----------------------------------------------------------------------------------------------
 
 
 int main(int argc, char *argv[]) {
