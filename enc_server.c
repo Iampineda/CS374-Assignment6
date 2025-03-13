@@ -256,21 +256,21 @@ int main(int argc, char *argv[]){
         error("ERROR on accept");
     }
 
-
-    printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
-
-    // Fork to handle the client connection
+  
+    // Concurrency Handling 
     pid_t spawnPid = fork();
-
     switch (spawnPid) {
         case -1:  // Fork failed
             printf("ERROR on fork\n");
             break;
 
         case 0:  // Child Process
-        
+
           close(listenSocket); 
-          verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  // For encryption server
+
+           // ** Step 0: Check Correct Client and Server Connection **
+          verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  
+
           // ** Step 1: Receive the full message from the client **
           char buffer[BUFFER_SIZE];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));
@@ -278,12 +278,9 @@ int main(int argc, char *argv[]){
           // ** Step 2: Parse plaintext and key **
           char plaintext[BUFFER_SIZE], key[BUFFER_SIZE];
           parseMessage(buffer, plaintext, key, connectionSocket);
-
   
-         // ** Step 3: Encrpty Message **
-          char ciphertext[BUFFER_SIZE] = {0}; // Buffer for encrypted message
-
-          printf("SERVER: Encrypting message...\n");
+          // ** Step 3: Encrpty Message **
+          char ciphertext[BUFFER_SIZE] = {0}; 
           encryptMessage(plaintext, key, ciphertext);
 
           // ** Step 4: Send the full message to the client ***
