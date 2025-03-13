@@ -247,10 +247,10 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
       ciphertext[i] = (cipherVal == 26) ? ' ' : ('A' + cipherVal);
 
       // ** Debugging Output **
-      printf("Encrypting: plaintext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> ciphertext[%d] = '%c' (%d)\n",
-      i, plaintext[i], plainVal, 
-      i, key[i], keyVal, 
-      i, ciphertext[i], cipherVal);
+      // printf("Encrypting: plaintext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> ciphertext[%d] = '%c' (%d)\n",
+      // i, plaintext[i], plainVal, 
+      // i, key[i], keyVal, 
+      // i, ciphertext[i], cipherVal);
   }
 
   
@@ -311,8 +311,6 @@ int main(int argc, char *argv[]){
         error("ERROR on accept");
     }
 
-    // After accepting the connection
-    verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  // For encryption server
 
     printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
 
@@ -326,7 +324,7 @@ int main(int argc, char *argv[]){
 
         case 0:  // Child Process
           close(listenSocket); 
-
+          verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  // For encryption server
           // ** Step 1: Receive the full message from the client **
           char buffer[1024];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));

@@ -213,10 +213,10 @@ void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
 
       plaintext[i] = (plainVal == 26) ? ' ' : ('A' + plainVal);
 
-      printf("Decrypting: ciphertext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> plaintext[%d] = '%c' (%d)\n",
-      i, ciphertext[i], cipherVal, 
-      i, key[i], keyVal, 
-      i, plaintext[i], plainVal);
+      // printf("Decrypting: ciphertext[%d] = '%c' (%d), key[%d] = '%c' (%d) -> plaintext[%d] = '%c' (%d)\n",
+      // i, ciphertext[i], cipherVal, 
+      // i, key[i], keyVal, 
+      // i, plaintext[i], plainVal);
   }
 
   plaintext[length] = '\n';
@@ -263,7 +263,6 @@ int main(int argc, char *argv[]) {
         error("ERROR on accept");
     }
 
-    verifyClient(connectionSocket, "DEC_CLIENT", "DEC_SERVER");  // For decryption server
     
     printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
 
@@ -276,6 +275,7 @@ int main(int argc, char *argv[]) {
 
         case 0:
           close(listenSocket);
+          verifyClient(connectionSocket, "DEC_CLIENT", "DEC_SERVER");  // For decryption server
 
           char buffer[1024];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));
