@@ -206,7 +206,7 @@ int main(int argc, char *argv[]) {
     readFileContents(argv[2], key, sizeof(key));
 
     // ** Step 3: check if plaintext has any invalid characters 
-    validatePlaintext(plaintext);
+    // validatePlaintext(plaintext);
 
     // ** Step 4: Prepare message for sending
     strncat(buffer, plaintext, BUFFER_SIZE - 2);
