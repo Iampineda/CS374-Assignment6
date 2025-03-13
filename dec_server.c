@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define BUFFER_SIZE 70000
+
 // Error function used for reporting issues
 void error(const char *msg) {
   perror(msg);
@@ -277,13 +279,13 @@ int main(int argc, char *argv[]) {
           close(listenSocket);
           verifyClient(connectionSocket, "DEC_CLIENT", "DEC_SERVER");  // For decryption server
 
-          char buffer[1024];
+          char buffer[BUFFER_SIZE];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));
 
-          char ciphertext[1024], key[1024];
+          char ciphertext[BUFFER_SIZE], key[BUFFER_SIZE];
           parseMessage(buffer, ciphertext, key, connectionSocket);
 
-          char plaintext[1024] = {0};
+          char plaintext[BUFFER_SIZE] = {0};
 
           printf("SERVER: Decrypting message...\n");
           decryptMessage(ciphertext, key, plaintext);

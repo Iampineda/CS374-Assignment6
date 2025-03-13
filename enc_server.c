@@ -6,6 +6,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define BUFFER_SIZE 70000
+
 // Error function used for reporting issues
 void error(const char *msg) {
   perror(msg);
@@ -274,7 +276,7 @@ void encryptMessage(const char *plaintext, const char *key, char *ciphertext) {
 
 int main(int argc, char *argv[]){
   int connectionSocket, charsRead;
-  char buffer[256];
+  char buffer[BUFFER_SIZE];
   struct sockaddr_in serverAddress, clientAddress;
   socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
@@ -326,16 +328,16 @@ int main(int argc, char *argv[]){
           close(listenSocket); 
           verifyClient(connectionSocket, "ENC_CLIENT", "ENC_SERVER");  // For encryption server
           // ** Step 1: Receive the full message from the client **
-          char buffer[1024];
+          char buffer[BUFFER_SIZE];
           receiveMessage(connectionSocket, buffer, sizeof(buffer));
 
           // ** Step 2: Parse plaintext and key **
-          char plaintext[1024], key[1024];
+          char plaintext[BUFFER_SIZE], key[BUFFER_SIZE];
           parseMessage(buffer, plaintext, key, connectionSocket);
 
   
          // ** Step 3: Encrpty Message **
-          char ciphertext[1024] = {0}; // Buffer for encrypted message
+          char ciphertext[BUFFER_SIZE] = {0}; // Buffer for encrypted message
 
           printf("SERVER: Encrypting message...\n");
           encryptMessage(plaintext, key, ciphertext);

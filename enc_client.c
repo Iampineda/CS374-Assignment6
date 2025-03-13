@@ -6,6 +6,8 @@
 #include <sys/socket.h> 
 #include <netdb.h>      
 
+#define BUFFER_SIZE 70000
+
 // Error function used for reporting issues
 void error(const char *msg) { 
     perror(msg); 
@@ -172,7 +174,7 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
 int main(int argc, char *argv[]) {
     int socketFD;
     struct sockaddr_in serverAddress;
-    char buffer[2048];
+    char buffer[BUFFER_SIZE];
 
     if (argc < 4) { 
         fprintf(stderr, "USAGE: %s plaintext key port\n", argv[0]); 
@@ -201,8 +203,8 @@ int main(int argc, char *argv[]) {
 
 
     // Prepare the message to send (plaintext and key)
-    char plaintext[1024] = {0};
-    char key[1024] = {0};
+    char plaintext[BUFFER_SIZE] = {0};
+    char key[BUFFER_SIZE] = {0};
 
     readFileContents(argv[1], plaintext, sizeof(plaintext));
     readFileContents(argv[2], key, sizeof(key));
