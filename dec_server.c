@@ -29,7 +29,7 @@ void setupAddressStruct(struct sockaddr_in* address,
   address->sin_addr.s_addr = INADDR_ANY;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------------------------------------------//
 
 void sendMessage(int socketFD, char *message) {
   int totalSent = 0;
@@ -182,8 +182,7 @@ void verifyClient(int connectionSocket, const char *expectedClientType, const ch
 }
 
 
-
-///////////////////////////
+//-----------------------------------------------------------------------------------------------------------------//
 
 
 
@@ -229,13 +228,6 @@ void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
-
-
-
-
 int main(int argc, char *argv[]) {
   int connectionSocket;
   struct sockaddr_in serverAddress, clientAddress;
@@ -259,14 +251,13 @@ int main(int argc, char *argv[]) {
 
   listen(listenSocket, 5);
   
+
+  // *****************************************************************************************************//
   while (1) {
     connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, &sizeOfClientInfo);
     if (connectionSocket < 0) {
         error("ERROR on accept");
     }
-
-    
-    printf("SERVER: Connected to client running at port %d\n", ntohs(clientAddress.sin_port));
 
     pid_t spawnPid = fork();
 
