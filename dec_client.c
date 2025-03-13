@@ -30,15 +30,10 @@ void setupAddressStruct(struct sockaddr_in* address, int portNumber, char* hostn
 }
 
 
+// -- Helper Functions --
+// ----------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
+// Function: 
 void sendMessage(int socketFD, char *message) {
     int totalSent = 0;
     int messageLength = strlen(message);
@@ -60,6 +55,7 @@ void sendMessage(int socketFD, char *message) {
     // printf("Sent full message: \"%s\"\n", message);
 }
 
+// Function: 
 void receiveMessage(int socketFD, char *buffer, int bufferSize) {
     memset(buffer, '\0', bufferSize);
     int totalReceived = 0;
@@ -85,40 +81,34 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 
 }
 
+// Function: Gets file size 
+long getFileSize(const char *filename) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: could not open file %s\n", filename);
+        exit(1);
+    }
 
-// Function to validate that the key is not shorter than the plaintext
+    fseek(file, 0, SEEK_END);  // Move to the end of the file
+    long size = ftell(file);   // Get the current position (file size)
+    fclose(file);
+
+    return size;
+}
+
+// Function: Checks if length key >= plaintext
 void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
-    // Open the plaintext file
-    FILE *plaintextFile = fopen(plaintextFileName, "r");
-    if (plaintextFile == NULL) {
-        fprintf(stderr, "Error: could not open plaintext file\n");
-        exit(1);
-    }
-
-    // Read plaintext content
-    char plaintext[1024] = {0};
-    fgets(plaintext, sizeof(plaintext) - 1, plaintextFile);
-    fclose(plaintextFile);
-
-    // Open the key file
-    FILE *keyFile = fopen(keyFileName, "r");
-    if (keyFile == NULL) {
-        fprintf(stderr, "Error: could not open key file\n");
-        exit(1);
-    }
-
-    // Read key content
-    char key[1024] = {0};
-    fgets(key, sizeof(key) - 1, keyFile);
-    fclose(keyFile);
+    long plaintextSize = getFileSize(plaintextFileName);
+    long keySize = getFileSize(keyFileName);
 
     // Check if key is shorter than plaintext
-    if (strlen(key) < strlen(plaintext)) {
-        fprintf(stderr, "Error: key ‘%s’ is too short\n", keyFileName);
-        exit(1);  // Ensure exit status is 1
+    if (keySize < plaintextSize) {
+        fprintf(stderr, "Error: key '%s' is too short\n", keyFileName);
+        exit(1);
     }
 }
 
+// Function: Copy contens of files to variable 
 void readFileContents(const char *filename, char *buffer, int maxSize) {
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -132,6 +122,8 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     buffer[strcspn(buffer, "\n")] = '\0';
 }
 
+
+// Function: 
 void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {
     char handshakeMsg[16];
     memset(handshakeMsg, '\0', sizeof(handshakeMsg));
@@ -160,62 +152,60 @@ void performHandshake(int socketFD, const char *clientType, const char *expected
     }
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
+// ----------------------------------------------------------------------------------------------
 
 
 int main(int argc, char *argv[]) {
     int socketFD;
     struct sockaddr_in serverAddress;
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
 
     if (argc < 4) { 
-        fprintf(stderr, "USAGE: %s ciphertext key port\n", argv[0]); 
+        fprintf(stderr, "USAGE: %s plaintext key port\n", argv[0]); 
         exit(1);
     }
 
-    validateKeyLength(argv[1], argv[2]);  
-
+    // Create a socket
     socketFD = socket(AF_INET, SOCK_STREAM, 0); 
     if (socketFD < 0){
         error("CLIENT: ERROR opening socket");
     }
 
+    // Set up the server address struct
     setupAddressStruct(&serverAddress, atoi(argv[3]), "localhost");
 
+
+    // Connect to server
     if (connect(socketFD, (struct sockaddr*)&serverAddress, sizeof(serverAddress)) < 0){
         error("CLIENT: ERROR connecting");
     }
 
-
+    // ** Step 0: Check Correct Client and Server Connection **
     performHandshake(socketFD, "DEC_CLIENT", "DEC_SERVER", atoi(argv[3]));
 
-
-
-    // Prepare the message to send (ciphertext and key)
+     // ** Step 1: Check legnth of key >= plaintext **
+    validateKeyLength(argv[1], argv[2]);  
+    
+    // ** Step 2: Copy key and ciphertext
     char ciphertext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
 
     readFileContents(argv[1], ciphertext, sizeof(ciphertext));
     readFileContents(argv[2], key, sizeof(key));
 
-    // Prepare the message to send (ciphertext + key)
-    memset(buffer, '\0', sizeof(buffer));
-    snprintf(buffer, sizeof(buffer), "%s\n%s", ciphertext, key);
+    // ** Step 3: Prepare message for sending
+    strncat(buffer, ciphertext, BUFFER_SIZE - 2);
+    strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
+    strncat(buffer, key, BUFFER_SIZE - strlen(buffer) - 1);
+    strncat(buffer, "\n", BUFFER_SIZE - strlen(buffer) - 1);
 
-    // Send message to server
+     // ** Step 4: Send plaintext + key
     sendMessage(socketFD, buffer);
 
-    // Receive response from server
+     // ** Step 5: Receive ciphertext
     receiveMessage(socketFD, buffer, sizeof(buffer));
 
-    // Print decrypted plaintext to stdout (ensuring it ends with a newline)
+    // Print ciphertext to stdout 
     printf("%s\n", buffer);
 
     // Close the socket
@@ -223,3 +213,5 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+

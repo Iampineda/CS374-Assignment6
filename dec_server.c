@@ -1,7 +1,3 @@
-
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -184,7 +180,6 @@ void decryptMessage(const char *ciphertext, const char *key, char *plaintext) {
   plaintext[length] = '\n';
   plaintext[length + 1] = '\0';
 }
-
 
 // ----------------------------------------------------------------------------------------------
 
