@@ -86,30 +86,50 @@ void receiveMessage(int socketFD, char *buffer, int bufferSize) {
 }
 
 
-// Function: 
-void readFilesAndValidate(const char *plaintextFileName, const char *keyFileName, char *plaintext, char *key, int bufferSize) {
+// Function to validate that the key is not shorter than the plaintext
+void validateKeyLength(const char *plaintextFileName, const char *keyFileName) {
+    // Open the plaintext file
     FILE *plaintextFile = fopen(plaintextFileName, "r");
     if (plaintextFile == NULL) {
         fprintf(stderr, "Error: could not open plaintext file\n");
         exit(1);
     }
-    fgets(plaintext, bufferSize / 2 - 1, plaintextFile);  // Limit size
-    fclose(plaintextFile);
-    plaintext[strcspn(plaintext, "\n")] = '\0';  // Remove newline
 
+    // Read plaintext content
+    char plaintext[1024] = {0};
+    fgets(plaintext, sizeof(plaintext) - 1, plaintextFile);
+    fclose(plaintextFile);
+
+    // Open the key file
     FILE *keyFile = fopen(keyFileName, "r");
     if (keyFile == NULL) {
         fprintf(stderr, "Error: could not open key file\n");
         exit(1);
     }
-    fgets(key, bufferSize / 2 - 1, keyFile);  // Limit size
-    fclose(keyFile);
-    key[strcspn(key, "\n")] = '\0';  // Remove newline
 
+    // Read key content
+    char key[1024] = {0};
+    fgets(key, sizeof(key) - 1, keyFile);
+    fclose(keyFile);
+
+    // Check if key is shorter than plaintext
     if (strlen(key) < strlen(plaintext)) {
         fprintf(stderr, "Error: key ‘%s’ is too short\n", keyFileName);
-        exit(1);  
+        exit(1);  // Ensure exit status is 1
     }
+}
+
+void readFileContents(const char *filename, char *buffer, int maxSize) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        fprintf(stderr, "Error: could not open %s\n", filename);
+        exit(1);
+    }
+    fgets(buffer, maxSize, file);
+    fclose(file);
+
+    // Strip newline character if present
+    buffer[strcspn(buffer, "\n")] = '\0';
 }
 
 
@@ -161,7 +181,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-   
+    validateKeyLength(argv[1], argv[2]);  // Validate key length before sending
 
     // Create a socket
     socketFD = socket(AF_INET, SOCK_STREAM, 0); 
@@ -186,8 +206,8 @@ int main(int argc, char *argv[]) {
     char plaintext[BUFFER_SIZE] = {0};
     char key[BUFFER_SIZE] = {0};
 
-    readFilesAndValidate(argv[1], argv[2], plaintext, key, BUFFER_SIZE);
-
+    readFileContents(argv[1], plaintext, sizeof(plaintext));
+    readFileContents(argv[2], key, sizeof(key));
 
     // Prepare the message to send (plaintext + key)
     memset(buffer, '\0', sizeof(buffer));
