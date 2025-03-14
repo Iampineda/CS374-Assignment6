@@ -8,7 +8,7 @@
 #include <netdb.h>      
 
 #define BUFFER_SIZE 70000
-#define x 10
+const int bool = 1;
 
 // Error function used for reporting issues
 void error(const char *msg) { 
