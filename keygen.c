@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+const int bool = 0;
 
 int main(int argc, char* argv[]) {
 
@@ -42,6 +43,6 @@ int main(int argc, char* argv[]) {
     key[keyLength] = '\0';
     printf("%s\n", key);
     free(key);
-    
+
     return 0; 
 }

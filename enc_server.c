@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 
 #define BUFFER_SIZE 70000
-const int bool = 1;
+const int bool = 0;
 
 // Error function used for reporting issues
 void error(const char *msg) {

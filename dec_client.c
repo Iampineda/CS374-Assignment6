@@ -7,7 +7,7 @@
 #include <netdb.h>      
 
 #define BUFFER_SIZE 70000
-const int bool = 1;
+const int bool = 0;
 
 // Error function used for reporting issues
 void error(const char *msg) { 
@@ -122,7 +122,6 @@ void readFileContents(const char *filename, char *buffer, int maxSize) {
     // Strip newline character if present
     buffer[strcspn(buffer, "\n")] = '\0';
 }
-
 
 // Function: 
 void performHandshake(int socketFD, const char *clientType, const char *expectedServerType, int port) {

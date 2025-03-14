@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 
 #define BUFFER_SIZE 70000
-const int bool = 1;
+const int bool = 0;
 
 // Error function used for reporting issues
 void error(const char *msg) {
@@ -29,7 +29,6 @@ void setupAddressStruct(struct sockaddr_in* address,
   // Allow a client at any address to connect to this server
   address->sin_addr.s_addr = INADDR_ANY;
 }
-
 
 // -- Helper Functions --
 // ----------------------------------------------------------------------------------------------
